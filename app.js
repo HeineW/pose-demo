@@ -8,6 +8,7 @@ async function setupCamera() {
     audio: false
   });
   video.srcObject = stream;
+
   return new Promise((resolve) => {
     video.onloadedmetadata = () => {
       canvas.width = video.videoWidth || 640;
@@ -17,82 +18,63 @@ async function setupCamera() {
   });
 }
 
-async function run() {
+async function runPoseNet() {
   await setupCamera();
   video.play();
 
-  await tf.setBackend('webgl');
+  const net = await posenet.load();
 
-  const detector = await poseDetection.createDetector(
-    poseDetection.SupportedModels.MoveNet,
-    { modelType: "Lightning" }
-  );
+  async function detect() {
+    const pose = await net.estimateSinglePose(video, {
+      flipHorizontal: false
+    });
 
-  async function render() {
-    const poses = await detector.estimatePoses(video);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // тестовая отрисовка квадрата
-    
-    if (poses.length > 0 && poses[0].keypoints) {
-      const keypoints = poses[0].keypoints.reduce((map, kp) => {
-        map[kp.name] = kp;
-        return map;
-      }, {});
-      
-      ctx.strokeStyle = "lime";
-      ctx.lineWidth = 2;
+    let found = 0;
 
-      const drawLine = (a, b) => {
-        if (keypoints[a] && keypoints[b] && keypoints[a].score > 0.3 && keypoints[b].score > 0.3) {
-          ctx.beginPath();
-          ctx.moveTo(keypoints[a].x, keypoints[a].y);
-          ctx.lineTo(keypoints[b].x, keypoints[b].y);
-          ctx.stroke();
-        }
-      };
+    pose.keypoints.forEach((p) => {
+      if (p.score > 0.3) {
+        found++;
+        ctx.beginPath();
+        ctx.arc(p.position.x, p.position.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = "yellow";
+        ctx.fill();
+      }
+    });
 
-      drawLine("left_shoulder", "right_shoulder");
-      drawLine("left_shoulder", "left_elbow");
-      drawLine("left_elbow", "left_wrist");
-      drawLine("right_shoulder", "right_elbow");
-      drawLine("right_elbow", "right_wrist");
-      drawLine("left_shoulder", "left_hip");
-      drawLine("right_shoulder", "right_hip");
-      drawLine("left_hip", "right_hip");
-      drawLine("left_hip", "left_knee");
-      drawLine("left_knee", "left_ankle");
-      drawLine("right_hip", "right_knee");
-      drawLine("right_knee", "right_ankle");
-    }
+    const skeleton = [
+      ["leftShoulder", "leftElbow"], ["leftElbow", "leftWrist"],
+      ["rightShoulder", "rightElbow"], ["rightElbow", "rightWrist"],
+      ["leftShoulder", "rightShoulder"],
+      ["leftHip", "rightHip"],
+      ["leftShoulder", "leftHip"], ["rightShoulder", "rightHip"],
+      ["leftHip", "leftKnee"], ["leftKnee", "leftAnkle"],
+      ["rightHip", "rightKnee"], ["rightKnee", "rightAnkle"]
+    ];
 
-    if (poses.length > 0 && poses[0].keypoints) {
-      const keypoints = poses[0].keypoints;
-      let count = 0;
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 2;
 
-      keypoints.forEach(p => {
-        if (p.score > 0.3) {
-          count++;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
-          ctx.fillStyle = "yellow";
-          ctx.fill();
-        }
-      });
+    skeleton.forEach(([partA, partB]) => {
+      const kp1 = pose.keypoints.find(k => k.part === partA);
+      const kp2 = pose.keypoints.find(k => k.part === partB);
+      if (kp1 && kp2 && kp1.score > 0.3 && kp2.score > 0.3) {
+        ctx.beginPath();
+        ctx.moveTo(kp1.position.x, kp1.position.y);
+        ctx.lineTo(kp2.position.x, kp2.position.y);
+        ctx.stroke();
+      }
+    });
 
-      ctx.fillStyle = "lime";
-      ctx.font = "18px sans-serif";
-      ctx.fillText("Ключевых точек найдено: " + count, 10, 25);
-    } else {
-      ctx.fillStyle = "red";
-      ctx.font = "20px sans-serif";
-      ctx.fillText("Поза не найдена", 10, 30);
-    }
+    ctx.fillStyle = "lime";
+    ctx.font = "18px sans-serif";
+    ctx.fillText("Ключевых точек найдено: " + found, 10, 25);
 
-    requestAnimationFrame(render);
+    requestAnimationFrame(detect);
   }
 
-  render();
+  detect();
 }
 
-run();
+runPoseNet();
