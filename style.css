@@ -23,3 +23,12 @@ video, canvas {
   height: 100%;
   object-fit: cover;
 }
+
+canvas {
+  z-index: 2;
+  pointer-events: none;
+}
+
+video {
+  z-index: 1;
+}
