@@ -11,14 +11,16 @@ body {
   position: relative;
   width: 100%;
   max-width: 640px;
-  aspect-ratio: 3 / 4;
+  /* Убрали aspect-ratio, так как размеры будут определяться видео */
 }
 
 video, canvas {
   position: absolute;
   top: 0;
   left: 0;
-  object-fit: cover;
+  /* Убрали width: 100% и height: 100%, чтобы сохранить оригинальные пропорции видео */
+  object-fit: contain; /* Изменили cover на contain для правильного отображения */
+  background: #000;
 }
 
 video {
