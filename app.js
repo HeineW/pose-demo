@@ -119,7 +119,7 @@ async function runPoseNet() {
 
     async function detectPose() {
       const pose = await net.estimateSinglePose(video, {
-        flipHorizontal: false,
+        flipHorizontal: true,
         decodingMethod: 'single-person'
       });
 
