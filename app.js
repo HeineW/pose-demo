@@ -30,11 +30,7 @@ async function runPoseNet() {
     });
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // тестовая заливка — чтобы убедиться, что canvas рисует
-    ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
-    ctx.fillRect(0, 0, 80, 80);
-
+    
     let found = 0;
 
     // рисуем все точки без фильтра
