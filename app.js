@@ -10,11 +10,11 @@ async function setupCamera() {
   video.srcObject = stream;
 
   return new Promise((resolve) => {
-    video.onloadedmetadata = () => {
+    video.addEventListener("loadeddata", () => {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
       resolve();
-    };
+    });
   });
 }
 
