@@ -2,8 +2,6 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-let lastKeypoints = null;
-
 async function setupCamera() {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "environment" },
@@ -23,6 +21,8 @@ async function runPoseDetection() {
   await setupCamera();
   video.play();
 
+  await tf.setBackend('webgl');
+
   const detector = await poseDetection.createDetector(
     poseDetection.SupportedModels.MoveNet,
     { modelType: "Lightning" }
@@ -32,11 +32,13 @@ async function runPoseDetection() {
     const poses = await detector.estimatePoses(video);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (poses.length > 0) {
+    if (poses.length > 0 && poses[0].keypoints) {
       const keypoints = poses[0].keypoints;
+      let count = 0;
 
       keypoints.forEach(p => {
         if (p.score > 0.3) {
+          count++;
           ctx.beginPath();
           ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "yellow";
@@ -63,33 +65,12 @@ async function runPoseDetection() {
         }
       });
 
-      if (lastKeypoints) {
-        const wristLeftNow = keypoints[9];   // левая кисть
-        const wristRightNow = keypoints[10]; // правая кисть
-        const wristLeftPrev = lastKeypoints[9];
-        const wristRightPrev = lastKeypoints[10];
-
-        if (wristLeftNow.score > 0.3 && wristLeftPrev.score > 0.3) {
-          const dx = wristLeftNow.x - wristLeftPrev.x;
-          const dy = wristLeftNow.y - wristLeftPrev.y;
-          ctx.fillStyle = "lime";
-          ctx.font = "16px sans-serif";
-          ctx.fillText(`L: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}`, 10, 20);
-        }
-
-        if (wristRightNow.score > 0.3 && wristRightPrev.score > 0.3) {
-          const dx = wristRightNow.x - wristRightPrev.x;
-          const dy = wristRightNow.y - wristRightPrev.y;
-          ctx.fillStyle = "lime";
-          ctx.font = "16px sans-serif";
-          ctx.fillText(`R: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}`, 10, 40);
-        }
-      }
-
-      lastKeypoints = keypoints;
+      ctx.fillStyle = "lime";
+      ctx.font = "18px sans-serif";
+      ctx.fillText("Ключевых точек найдено: " + count, 10, 25);
     } else {
       ctx.fillStyle = "red";
-      ctx.font = "18px sans-serif";
+      ctx.font = "20px sans-serif";
       ctx.fillText("Поза не найдена", 10, 30);
     }
 
