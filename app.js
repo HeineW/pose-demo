@@ -33,8 +33,38 @@ async function run() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // тестовая отрисовка квадрата
-    ctx.fillStyle = "red";
-    ctx.fillRect(10, 10, 100, 100);
+    
+    if (poses.length > 0 && poses[0].keypoints) {
+      const keypoints = poses[0].keypoints.reduce((map, kp) => {
+        map[kp.name] = kp;
+        return map;
+      }, {});
+      
+      ctx.strokeStyle = "lime";
+      ctx.lineWidth = 2;
+
+      const drawLine = (a, b) => {
+        if (keypoints[a] && keypoints[b] && keypoints[a].score > 0.3 && keypoints[b].score > 0.3) {
+          ctx.beginPath();
+          ctx.moveTo(keypoints[a].x, keypoints[a].y);
+          ctx.lineTo(keypoints[b].x, keypoints[b].y);
+          ctx.stroke();
+        }
+      };
+
+      drawLine("left_shoulder", "right_shoulder");
+      drawLine("left_shoulder", "left_elbow");
+      drawLine("left_elbow", "left_wrist");
+      drawLine("right_shoulder", "right_elbow");
+      drawLine("right_elbow", "right_wrist");
+      drawLine("left_shoulder", "left_hip");
+      drawLine("right_shoulder", "right_hip");
+      drawLine("left_hip", "right_hip");
+      drawLine("left_hip", "left_knee");
+      drawLine("left_knee", "left_ankle");
+      drawLine("right_hip", "right_knee");
+      drawLine("right_knee", "right_ankle");
+    }
 
     if (poses.length > 0 && poses[0].keypoints) {
       const keypoints = poses[0].keypoints;
