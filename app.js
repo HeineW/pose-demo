@@ -12,8 +12,6 @@ async function setupCamera() {
   return new Promise((resolve) => {
     video.onloadedmetadata = () => {
       // Устанавливаем размеры canvas в соответствии с video
-      video.width = video.videoWidth;
-      video.height = video.videoHeight;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       resolve();
