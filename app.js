@@ -11,9 +11,22 @@ async function setupCamera() {
 
   return new Promise((resolve) => {
     video.onloadedmetadata = () => {
-      // Устанавливаем размеры canvas в соответствии с video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // Получаем реальные размеры видео
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      
+      // Устанавливаем такие же размеры для canvas
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      
+      // Масштабируем canvas под отображаемые размеры
+      const container = document.querySelector('.video-wrapper');
+      const scaleX = container.clientWidth / videoWidth;
+      const scaleY = container.clientHeight / videoHeight;
+      
+      canvas.style.transform = `scale(${scaleX}, ${scaleY})`;
+      canvas.style.transformOrigin = 'top left';
+      
       resolve();
     };
   });
