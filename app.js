@@ -10,15 +10,11 @@ async function setupCamera() {
   video.srcObject = stream;
 
   return new Promise((resolve) => {
-    video.addEventListener("loadeddata", () => {
+    video.onloadedmetadata = () => {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
-      
-      console.log("Canvas size:", canvas.width, canvas.height);
-      console.log("Video size:", video.videoWidth, video.videoHeight);
-      
       resolve();
-    });
+    };
   });
 }
 
@@ -35,16 +31,20 @@ async function runPoseNet() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
     let found = 0;
 
     pose.keypoints.forEach((p) => {
-      if (p.score > 0.3) {
-        found++;
-        ctx.beginPath();
-        ctx.arc(p.position.x, p.position.y, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = "yellow";
-        ctx.fill();
-      }
+      const x = p.position.x * scaleX;
+      const y = p.position.y * scaleY;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = "yellow";
+      ctx.fill();
+      found++;
     });
 
     const skeleton = [
@@ -63,10 +63,15 @@ async function runPoseNet() {
     skeleton.forEach(([partA, partB]) => {
       const kp1 = pose.keypoints.find(k => k.part === partA);
       const kp2 = pose.keypoints.find(k => k.part === partB);
-      if (kp1 && kp2 && kp1.score > 0.3 && kp2.score > 0.3) {
+      if (kp1 && kp2) {
+        const x1 = kp1.position.x * scaleX;
+        const y1 = kp1.position.y * scaleY;
+        const x2 = kp2.position.x * scaleX;
+        const y2 = kp2.position.y * scaleY;
+
         ctx.beginPath();
-        ctx.moveTo(kp1.position.x, kp1.position.y);
-        ctx.lineTo(kp2.position.x, kp2.position.y);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
       }
     });
