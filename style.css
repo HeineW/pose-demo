@@ -11,20 +11,22 @@ body {
   position: relative;
   width: 100%;
   max-width: 640px;
-  /* Убрали aspect-ratio, так как размеры будут определяться видео */
+  aspect-ratio: 3 / 4;
+  overflow: hidden; /* Добавим это, чтобы содержимое не выходило за границы */
 }
 
 video, canvas {
   position: absolute;
   top: 0;
   left: 0;
-  /* Убрали width: 100% и height: 100%, чтобы сохранить оригинальные пропорции видео */
-  object-fit: contain; /* Изменили cover на contain для правильного отображения */
-  background: #000;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Возвращаем cover для заполнения контейнера */
 }
 
 video {
   z-index: 1;
+  transform: scaleX(-1); /* Отражаем видео по горизонтали для более естественного отображения */
 }
 
 canvas {
