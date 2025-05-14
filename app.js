@@ -2,11 +2,10 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Функция настройки камеры
 async function setupCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { 
+      video: {
         facingMode: "environment",
         width: { ideal: 640 },
         height: { ideal: 480 }
@@ -17,43 +16,55 @@ async function setupCamera() {
 
     return new Promise((resolve) => {
       video.onloadedmetadata = () => {
-        // Устанавливаем реальные размеры видео
+        // Получаем реальные размеры видео
         const videoWidth = video.videoWidth;
         const videoHeight = video.videoHeight;
         
-        // Canvas должен иметь реальные размеры видео
+        // Устанавливаем такие же размеры для canvas
         canvas.width = videoWidth;
         canvas.height = videoHeight;
         
-        // Видео оставляем с CSS-размерами (100%)
-        video.width = video.clientWidth;
-        video.height = video.clientHeight;
+        // Вычисляем соотношение сторон контейнера
+        const container = document.querySelector('.video-container');
+        const containerRatio = container.clientWidth / container.clientHeight;
+        const videoRatio = videoWidth / videoHeight;
         
-        console.log(`Video dimensions: ${videoWidth}x${videoHeight}`);
-        console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+        // Вычисляем масштаб и смещение для правильного позиционирования
+        let scale, offsetX = 0, offsetY = 0;
+        
+        if (containerRatio > videoRatio) {
+          // Видео уже контейнера - масштабируем по высоте
+          scale = container.clientHeight / videoHeight;
+          offsetX = (container.clientWidth - videoWidth * scale) / 2;
+        } else {
+          // Видео шире контейнера - масштабируем по ширине
+          scale = container.clientWidth / videoWidth;
+          offsetY = (container.clientHeight - videoHeight * scale) / 2;
+        }
+        
+        // Применяем трансформации к видео и canvas
+        video.style.transform = `scale(${scale}) translate(${offsetX/scale}px, ${offsetY/scale}px)`;
+        canvas.style.transform = `scale(${scale}) translate(${offsetX/scale}px, ${offsetY/scale}px)`;
+        
+        console.log(`Video: ${videoWidth}x${videoHeight}, Scale: ${scale}, Offset: ${offsetX},${offsetY}`);
         resolve();
       };
     });
   } catch (error) {
-    console.error("Camera access error:", error);
+    console.error("Camera error:", error);
     throw error;
   }
 }
 
-// Функция отрисовки скелета
 function drawSkeleton(pose) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // Масштабируем координаты под реальные размеры canvas
-  const scaleX = canvas.width / video.clientWidth;
-  const scaleY = canvas.height / video.clientHeight;
-
   // Рисуем ключевые точки
   let foundPoints = 0;
   pose.keypoints.forEach((point) => {
     if (point.score > 0.3) {
-      const x = point.position.x * scaleX;
-      const y = point.position.y * scaleY;
+      const x = point.position.x;
+      const y = point.position.y;
       ctx.beginPath();
       ctx.arc(x, y, 6, 0, 2 * Math.PI);
       ctx.fillStyle = "yellow";
@@ -81,14 +92,9 @@ function drawSkeleton(pose) {
     const pointB = pose.keypoints.find(k => k.part === partB);
     
     if (pointA && pointB && pointA.score > 0.3 && pointB.score > 0.3) {
-      const x1 = pointA.position.x * scaleX;
-      const y1 = pointA.position.y * scaleY;
-      const x2 = pointB.position.x * scaleX;
-      const y2 = pointB.position.y * scaleY;
-
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.moveTo(pointA.position.x, pointA.position.y);
+      ctx.lineTo(pointB.position.x, pointB.position.y);
       ctx.stroke();
     }
   });
@@ -96,10 +102,9 @@ function drawSkeleton(pose) {
   // Отображаем количество найденных точек
   ctx.fillStyle = "lime";
   ctx.font = "18px sans-serif";
-  ctx.fillText(`Ключевых точек найдено: ${foundPoints}`, 10, 25);
+  ctx.fillText(`Точек: ${foundPoints}`, 10, 25);
 }
 
-// Основная функция
 async function runPoseNet() {
   try {
     await setupCamera();
@@ -124,12 +129,10 @@ async function runPoseNet() {
 
     detectPose();
   } catch (error) {
-    console.error("PoseNet error:", error);
-    alert("Произошла ошибка при инициализации PoseNet: " + error.message);
+    console.error("Error:", error);
+    alert("Ошибка: " + error.message);
   }
 }
 
 // Запуск приложения
-document.addEventListener('DOMContentLoaded', () => {
-  runPoseNet().catch(e => console.error("Application error:", e));
-});
+document.addEventListener('DOMContentLoaded', runPoseNet);
