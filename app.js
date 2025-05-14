@@ -2,7 +2,7 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Проверка и полифилл
+// Полифилл
 if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
 }
@@ -51,13 +51,6 @@ async function run() {
   async function detect() {
     const poses = await detector.estimatePoses(video);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // тестовая отрисовка квадрата
-    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "lime";
-    ctx.fillRect(50, 50, 100, 100);
 
     if (poses.length > 0 && poses[0].keypoints) {
       const keypoints = poses[0].keypoints;
