@@ -17,7 +17,7 @@ async function setupCamera() {
   });
 }
 
-async function runPoseDetection() {
+async function run() {
   await setupCamera();
   video.play();
 
@@ -32,6 +32,10 @@ async function runPoseDetection() {
     const poses = await detector.estimatePoses(video);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // тестовая отрисовка квадрата
+    ctx.fillStyle = "red";
+    ctx.fillRect(10, 10, 100, 100);
+
     if (poses.length > 0 && poses[0].keypoints) {
       const keypoints = poses[0].keypoints;
       let count = 0;
@@ -43,25 +47,6 @@ async function runPoseDetection() {
           ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "yellow";
           ctx.fill();
-        }
-      });
-
-      const connections = [
-        [5, 7], [7, 9], [6, 8], [8, 10], [5, 6],
-        [11, 13], [13, 15], [12, 14], [14, 16],
-        [11, 12], [5, 11], [6, 12]
-      ];
-
-      ctx.strokeStyle = "cyan";
-      ctx.lineWidth = 2;
-      connections.forEach(([i, j]) => {
-        const p1 = keypoints[i];
-        const p2 = keypoints[j];
-        if (p1.score > 0.3 && p2.score > 0.3) {
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.stroke();
         }
       });
 
@@ -78,8 +63,6 @@ async function runPoseDetection() {
   }
 
   render();
-  ctx.fillStyle = "red";
-  ctx.fillRect(10,10,50,50)
 }
 
-runPoseDetection();
+run();
