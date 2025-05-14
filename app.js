@@ -38,13 +38,15 @@ async function runPoseNet() {
     let found = 0;
 
     pose.keypoints.forEach((p) => {
-      const x = p.position.x * scaleX;
-      const y = p.position.y * scaleY;
-      ctx.beginPath();
-      ctx.arc(x, y, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = "yellow";
-      ctx.fill();
-      found++;
+      if (p.score > 0.3) {
+        const x = p.position.x * scaleX;
+        const y = p.position.y * scaleY;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = "yellow";
+        ctx.fill();
+        found++;
+      }
     });
 
     const skeleton = [
@@ -63,7 +65,7 @@ async function runPoseNet() {
     skeleton.forEach(([partA, partB]) => {
       const kp1 = pose.keypoints.find(k => k.part === partA);
       const kp2 = pose.keypoints.find(k => k.part === partB);
-      if (kp1 && kp2) {
+      if (kp1 && kp2 && kp1.score > 0.3 && kp2.score > 0.3) {
         const x1 = kp1.position.x * scaleX;
         const y1 = kp1.position.y * scaleY;
         const x2 = kp2.position.x * scaleX;
