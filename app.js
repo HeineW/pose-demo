@@ -31,18 +31,22 @@ async function runPoseNet() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // тестовая заливка — чтобы убедиться, что canvas рисует
+    ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
+    ctx.fillRect(0, 0, 80, 80);
+
     let found = 0;
 
+    // рисуем все точки без фильтра
     pose.keypoints.forEach((p) => {
-      if (p.score > 0.3) {
-        found++;
-        ctx.beginPath();
-        ctx.arc(p.position.x, p.position.y, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = "yellow";
-        ctx.fill();
-      }
+      ctx.beginPath();
+      ctx.arc(p.position.x, p.position.y, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = "yellow";
+      ctx.fill();
+      found++;
     });
 
+    // рисуем линии без фильтрации
     const skeleton = [
       ["leftShoulder", "leftElbow"], ["leftElbow", "leftWrist"],
       ["rightShoulder", "rightElbow"], ["rightElbow", "rightWrist"],
@@ -59,7 +63,7 @@ async function runPoseNet() {
     skeleton.forEach(([partA, partB]) => {
       const kp1 = pose.keypoints.find(k => k.part === partA);
       const kp2 = pose.keypoints.find(k => k.part === partB);
-      if (kp1 && kp2 && kp1.score > 0.3 && kp2.score > 0.3) {
+      if (kp1 && kp2) {
         ctx.beginPath();
         ctx.moveTo(kp1.position.x, kp1.position.y);
         ctx.lineTo(kp2.position.x, kp2.position.y);
@@ -67,6 +71,7 @@ async function runPoseNet() {
       }
     });
 
+    // Текст с количеством точек
     ctx.fillStyle = "lime";
     ctx.font = "18px sans-serif";
     ctx.fillText("Ключевых точек найдено: " + found, 10, 25);
