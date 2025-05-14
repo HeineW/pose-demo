@@ -13,6 +13,10 @@ async function setupCamera() {
     video.addEventListener("loadeddata", () => {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
+      
+      console.log("Canvas size:", canvas.width, canvas.height);
+      console.log("Video size:", video.videoWidth, video.videoHeight);
+      
       resolve();
     });
   });
