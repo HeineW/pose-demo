@@ -2,24 +2,6 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Полифилл
-if (navigator.mediaDevices === undefined) {
-  navigator.mediaDevices = {};
-}
-
-if (navigator.mediaDevices.getUserMedia === undefined) {
-  navigator.mediaDevices.getUserMedia = function (constraints) {
-    const getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-    if (!getUserMedia) {
-      alert("Ваш браузер не поддерживает getUserMedia");
-      return Promise.reject(new Error("getUserMedia не поддерживается"));
-    }
-    return new Promise((resolve, reject) =>
-      getUserMedia.call(navigator, constraints, resolve, reject)
-    );
-  };
-}
-
 async function setupCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -29,8 +11,8 @@ async function setupCamera() {
     video.srcObject = stream;
     return new Promise((resolve) => {
       video.onloadedmetadata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
         resolve(video);
       };
     });
@@ -44,60 +26,17 @@ async function run() {
   await setupCamera();
   await video.play();
 
-  const detector = await poseDetection.createDetector(
-    poseDetection.SupportedModels.MoveNet,
-    { modelType: "Lightning" }
-  );
+  function drawTest() {
+    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  async function detect() {
-    const poses = await detector.estimatePoses(video);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "lime";
+    ctx.fillRect(50, 50, 100, 100);
 
-    // временный тест: прямоугольник
-    ctx.fillStyle = "red";
-    ctx.fillRect(10, 10, 30, 30);
-
-    if (poses.length > 0 && poses[0].keypoints) {
-      const keypoints = poses[0].keypoints;
-
-      keypoints.forEach((p) => {
-        if (p.score > 0.2) {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
-          ctx.fillStyle = "lime";
-          ctx.fill();
-        }
-      });
-
-      // рисуем линии между парными точками (скелет)
-      const connections = [
-        [5, 7], [7, 9],  // левая рука
-        [6, 8], [8, 10], // правая рука
-        [5, 6],          // плечи
-        [11, 13], [13, 15], // левая нога
-        [12, 14], [14, 16], // правая нога
-        [11, 12], // бёдра
-        [5, 11], [6, 12]  // корпус
-      ];
-
-      ctx.strokeStyle = "cyan";
-      ctx.lineWidth = 2;
-      connections.forEach(([i, j]) => {
-        const kp1 = keypoints[i];
-        const kp2 = keypoints[j];
-        if (kp1.score > 0.2 && kp2.score > 0.2) {
-          ctx.beginPath();
-          ctx.moveTo(kp1.x, kp1.y);
-          ctx.lineTo(kp2.x, kp2.y);
-          ctx.stroke();
-        }
-      });
-    }
-
-    requestAnimationFrame(detect);
+    requestAnimationFrame(drawTest);
   }
 
-  detect();
+  drawTest();
 }
 
 run();
