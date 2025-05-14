@@ -2,24 +2,21 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+let lastKeypoints = null;
+
 async function setupCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
-    video.srcObject = stream;
-    return new Promise((resolve) => {
-      video.onloadedmetadata = () => {
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        resolve();
-      };
-    });
-  } catch (err) {
-    alert("Ошибка доступа к камере: " + err.message);
-    console.error(err);
-  }
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
+    audio: false
+  });
+  video.srcObject = stream;
+  return new Promise((resolve) => {
+    video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      resolve();
+    };
+  });
 }
 
 async function runPoseDetection() {
@@ -33,7 +30,6 @@ async function runPoseDetection() {
 
   async function render() {
     const poses = await detector.estimatePoses(video);
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (poses.length > 0) {
@@ -42,7 +38,7 @@ async function runPoseDetection() {
       keypoints.forEach(p => {
         if (p.score > 0.3) {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+          ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "yellow";
           ctx.fill();
         }
@@ -56,7 +52,6 @@ async function runPoseDetection() {
 
       ctx.strokeStyle = "cyan";
       ctx.lineWidth = 2;
-
       connections.forEach(([i, j]) => {
         const p1 = keypoints[i];
         const p2 = keypoints[j];
@@ -67,6 +62,35 @@ async function runPoseDetection() {
           ctx.stroke();
         }
       });
+
+      if (lastKeypoints) {
+        const wristLeftNow = keypoints[9];   // левая кисть
+        const wristRightNow = keypoints[10]; // правая кисть
+        const wristLeftPrev = lastKeypoints[9];
+        const wristRightPrev = lastKeypoints[10];
+
+        if (wristLeftNow.score > 0.3 && wristLeftPrev.score > 0.3) {
+          const dx = wristLeftNow.x - wristLeftPrev.x;
+          const dy = wristLeftNow.y - wristLeftPrev.y;
+          ctx.fillStyle = "lime";
+          ctx.font = "16px sans-serif";
+          ctx.fillText(`L: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}`, 10, 20);
+        }
+
+        if (wristRightNow.score > 0.3 && wristRightPrev.score > 0.3) {
+          const dx = wristRightNow.x - wristRightPrev.x;
+          const dy = wristRightNow.y - wristRightPrev.y;
+          ctx.fillStyle = "lime";
+          ctx.font = "16px sans-serif";
+          ctx.fillText(`R: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}`, 10, 40);
+        }
+      }
+
+      lastKeypoints = keypoints;
+    } else {
+      ctx.fillStyle = "red";
+      ctx.font = "18px sans-serif";
+      ctx.fillText("Поза не найдена", 10, 30);
     }
 
     requestAnimationFrame(render);
