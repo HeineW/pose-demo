@@ -2,6 +2,7 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+// Полифилл
 if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
 }
@@ -27,7 +28,11 @@ async function setupCamera() {
     });
     video.srcObject = stream;
     return new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve(video);
+      video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        resolve(video);
+      };
     });
   } catch (err) {
     alert("Ошибка доступа к камере: " + err.message);
@@ -44,20 +49,47 @@ async function run() {
     { modelType: "Lightning" }
   );
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
   async function detect() {
     const poses = await detector.estimatePoses(video);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // временный тест: прямоугольник
+    ctx.fillStyle = "red";
+    ctx.fillRect(10, 10, 30, 30);
+
     if (poses.length > 0 && poses[0].keypoints) {
-      poses[0].keypoints.forEach((p) => {
-        if (p.score > 0.5) {
+      const keypoints = poses[0].keypoints;
+
+      keypoints.forEach((p) => {
+        if (p.score > 0.2) {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+          ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "lime";
           ctx.fill();
+        }
+      });
+
+      // рисуем линии между парными точками (скелет)
+      const connections = [
+        [5, 7], [7, 9],  // левая рука
+        [6, 8], [8, 10], // правая рука
+        [5, 6],          // плечи
+        [11, 13], [13, 15], // левая нога
+        [12, 14], [14, 16], // правая нога
+        [11, 12], // бёдра
+        [5, 11], [6, 12]  // корпус
+      ];
+
+      ctx.strokeStyle = "cyan";
+      ctx.lineWidth = 2;
+      connections.forEach(([i, j]) => {
+        const kp1 = keypoints[i];
+        const kp2 = keypoints[j];
+        if (kp1.score > 0.2 && kp2.score > 0.2) {
+          ctx.beginPath();
+          ctx.moveTo(kp1.x, kp1.y);
+          ctx.lineTo(kp2.x, kp2.y);
+          ctx.stroke();
         }
       });
     }
