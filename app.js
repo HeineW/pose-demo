@@ -2,7 +2,6 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Полифилл
 if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
 }
@@ -52,11 +51,17 @@ async function run() {
     const poses = await detector.estimatePoses(video);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (poses.length > 0 && poses[0].keypoints) {
+    if (!poses || poses.length === 0 || !poses[0].keypoints) {
+      ctx.fillStyle = "red";
+      ctx.font = "20px sans-serif";
+      ctx.fillText("Поза не найдена", 20, 40);
+    } else {
       const keypoints = poses[0].keypoints;
+      let confidentPoints = 0;
 
       keypoints.forEach((p) => {
         if (p.score > 0.2) {
+          confidentPoints++;
           ctx.beginPath();
           ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "yellow";
@@ -82,6 +87,12 @@ async function run() {
           ctx.stroke();
         }
       });
+
+      if (confidentPoints < 5) {
+        ctx.fillStyle = "orange";
+        ctx.font = "20px sans-serif";
+        ctx.fillText("Поза найдена плохо", 20, 40);
+      }
     }
 
     requestAnimationFrame(detect);
