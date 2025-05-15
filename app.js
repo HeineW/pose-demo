@@ -25,7 +25,7 @@ async function setupCamera() {
         canvas.width = videoWidth;
         canvas.height = videoHeight;
         
-        // Видео оставляем с CSS-размерами (100%)
+        // Видео оставляем с CSS-размерами
         video.width = video.clientWidth;
         video.height = video.clientHeight;
         
